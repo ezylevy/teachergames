@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <title>משחק השלמת מילים</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f8ff;
+            margin: 0;
+            padding: 20px;
+        }
+        .game-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .sentence {
+            font-size: 1.2em;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            line-height: 1.6;
+        }
+        .options-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+        .word-option {
+            background-color: #e3f2fd;
+            border: 2px solid #2196f3;
+            border-radius: 5px;
+            padding: 8px 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.1em;
+        }
+        .word-option:hover {
+            background-color: #bbdefb;
+            transform: translateY(-2px);
+        }
+        .word-option.selected {
+            background-color: #2196f3;
+            color: white;
+        }
+        .word-option.correct {
+            background-color: #a5d6a7;
+            border-color: #4caf50;
+            color: black;
+        }
+        .word-option.incorrect {
+            background-color: #ef9a9a;
+            border-color: #f44336;
+            color: black;
+        }
+        .score {
+            font-size: 1.2em;
+            margin: 20px 0;
+            color: #2c3e50;
+        }
+        button {
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+            margin: 10px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #1976d2;
+        }
+        button:disabled {
+            background-color: #bdbdbd;
+            cursor: not-allowed;
+        }
+        .message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            display: none;
+            z-index: 1000;
+            font-size: 1.2em;
+        }
+        .progress {
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+        .blanks {
+            border-bottom: 2px solid #2196f3;
+            color: #2196f3;
+            padding: 0 5px;
+            font-weight: bold;
+        }
+        @keyframes celebration {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        .celebrate {
+            animation: celebration 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>משחק השלמת מילים בעברית</h1>
+        <div class="score">נקודות: <span id="score">0</span></div>
+        <div class="progress">שאלה <span id="currentQuestion">1</span> מתוך <span id="totalQuestions">10</span></div>
+        
+        <div id="questionContainer" class="sentence"></div>
+        <div id="optionsContainer" class="options-container"></div>
+
+        <button onclick="checkAnswer()" id="checkButton">בדוק תשובה</button>
+        <button onclick="nextQuestion()" id="nextButton" style="display: none;">המשך לשאלה הבאה</button>
+    </div>
+
+    <div id="successMessage" class="message">כל הכבוד! 🎉</div>
+    <div id="errorMessage" class="message">נסו שוב! 💪</div>
+
+    <script>
+        const questions = [
+            {
+                sentence: "הילד ____ ספר מעניין בספרייה.",
+                options: ["קורא", "רואה", "שומע", "מדבר"],
+                correct: "קורא",
+                hint: "פעולה שעושים עם ספר"
+            },
+            {
+                sentence: "השמש ____ בבוקר במזרח.",
+                options: ["זורחת", "שוקעת", "מאירה", "נעלמת"],
+                correct: "זורחת",
+                hint: "מה קורה לשמש בתחילת היום"
+            },
+            {
+                sentence: "הציפור ____ בשמיים הכחולים.",
+                options: ["עפה", "הולכת", "קופצת", "רצה"],
+                correct: "עפה",
+                hint: "איך ציפור נעה בשמיים"
+            },
+            {
+                sentence: "הילדה ____ שיר יפה במקהלה.",
+                options: ["שרה", "רוקדת", "מנגנת", "מציירת"],
+                correct: "שרה",
+                hint: "פעולה שעושים עם הקול"
+            },
+            {
+                sentence: "החתול ____ את החלב מהקערה.",
+                options: ["שותה", "אוכל", "מריח", "רואה"],
+                correct: "שותה",
+                hint: "מה עושים עם נוזלים"
+            },
+            {
+                sentence: "התלמידים ____ בחצר בהפסקה.",
+                options: ["משחקים", "ישנים", "לומדים", "יושבים"],
+                correct: "משחקים",
+                hint: "מה עושים בהפסקה"
+            },
+            {
+                sentence: "אמא ____ עוגה טעימה במטבח.",
+                options: ["אופה", "קונה", "מוכרת", "מביאה"],
+                correct: "אופה",
+                hint: "איך מכינים עוגה"
+            },
+            {
+                sentence: "הדבורה ____ צוף מהפרחים.",
+                options: ["אוספת", "מביאה", "זורקת", "שומרת"],
+                correct: "אוספת",
+                hint: "מה דבורה עושה עם צוף"
+            },
+            {
+                sentence: "הסופר ____ סיפור מרתק לילדים.",
+                options: ["כותב", "מצייר", "מספר", "קורא"],
+                correct: "כותב",
+                hint: "איך יוצרים ספר חדש"
+            },
+            {
+                sentence: "הגנן ____ את הפרחים בגינה.",
+                options: ["משקה", "קוטף", "זורק", "רואה"],
+                correct: "משקה",
+                hint: "מה עושים כדי שצמחים יגדלו"
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let selectedOption = null;
+
+        function showQuestion() {
+            const question = questions[currentQuestionIndex];
+            document.getElementById('questionContainer').innerHTML = question.sentence;
+            
+            const optionsHtml = question.options.map(option => 
+                `<div class="word-option" onclick="selectOption(this, '${option}')">${option}</div>`
+            ).join('');
+            
+            document.getElementById('optionsContainer').innerHTML = optionsHtml;
+            document.getElementById('currentQuestion').textContent = currentQuestionIndex + 1;
+            document.getElementById('totalQuestions').textContent = questions.length;
+            
+            document.getElementById('checkButton').style.display = 'inline-block';
+            document.getElementById('nextButton').style.display = 'none';
+            
+            selectedOption = null;
+        }
+
+        function selectOption(element, option) {
+            document.querySelectorAll('.word-option').forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+            selectedOption = option;
+        }
+
+        function showMessage(type, duration = 2000) {
+            const msg = document.getElementById(type === 'success' ? 'successMessage' : 'errorMessage');
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display = 'none', duration);
+        }
+
+        function checkAnswer() {
+            if (!selectedOption) return;
+
+            const question = questions[currentQuestionIndex];
+            const correct = selectedOption === question.correct;
+            
+            document.querySelectorAll('.word-option').forEach(option => {
+                if (option.textContent === selectedOption) {
+                    option.classList.add(correct ? 'correct' : 'incorrect');
+                }
+            });
+
+            if (correct) {
+                score += 10;
+                document.getElementById('score').textContent = score;
+                showMessage('success');
+                document.getElementById('checkButton').style.display = 'none';
+                document.getElementById('nextButton').style.display = 'inline-block';
+            } else {
+                showMessage('error');
+            }
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                showQuestion();
+            } else {
+                endGame();
+            }
+        }
+
+        function endGame() {
+            document.getElementById('questionContainer').innerHTML = `
+                <h2>כל הכבוד! סיימתם את המשחק!</h2>
+                <p>הניקוד הסופי שלכם: ${score} מתוך ${questions.length * 10}</p>
+            `;
+            document.getElementById('optionsContainer').innerHTML = '';
+            document.getElementById('checkButton').style.display = 'none';
+            document.getElementById('nextButton').style.display = 'none';
+        }
+
+        window.onload = showQuestion;
+    </script>
+</body>
+</html>

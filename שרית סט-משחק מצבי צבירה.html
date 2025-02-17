@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <title>משחק מיון מצבי צבירה</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f8ff;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        .game-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .states-container {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+        .state {
+            width: 200px;
+            min-height: 200px;
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            padding: 10px;
+            background-color: #ebf5fb;
+        }
+        .item {
+            background-color: #fff;
+            border: 1px solid #bdc3c7;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 5px;
+            cursor: move;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        .item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .items-container {
+            margin: 20px 0;
+            padding: 10px;
+            border: 2px dashed #bdc3c7;
+            border-radius: 10px;
+            min-height: 50px;
+        }
+        .score {
+            font-size: 1.2em;
+            margin: 20px 0;
+            color: #2c3e50;
+        }
+        .correct {
+            background-color: #d4edda;
+            border-color: #28a745;
+        }
+        .incorrect {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+            margin: 10px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .firework {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: explode 1s ease-out forwards;
+            opacity: 0;
+            pointer-events: none;
+        }
+        @keyframes explode {
+            0% {
+                transform: scale(0);
+                opacity: 1;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                transform: scale(20);
+                opacity: 0;
+            }
+        }
+        .message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 20px 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+            font-size: 24px;
+            color: #2c3e50;
+        }
+        .message.error {
+            background-color: #fff3f3;
+            border: 2px solid #dc3545;
+        }
+        .message.success {
+            background-color: #f0fff0;
+            border: 2px solid #28a745;
+        }
+        .state h2 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>משחק מיון מצבי צבירה</h1>
+        <div class="score">ניקוד: <span id="score">0</span></div>
+        
+        <div class="states-container">
+            <div class="state" id="solid" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <h2>מוצק</h2>
+            </div>
+            <div class="state" id="liquid" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <h2>נוזל</h2>
+            </div>
+            <div class="state" id="gas" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <h2>גז</h2>
+            </div>
+        </div>
+
+        <div class="items-container" id="items">
+            <!-- Items will be added here by JavaScript -->
+        </div>
+
+        <button onclick="checkAnswers()">בדוק תשובות</button>
+        <button onclick="resetGame()">משחק חדש</button>
+    </div>
+
+    <div id="successMessage" class="message success">
+        כל הכבוד! 🎉
+        <br>
+        השלמת את המשימה בהצלחה!
+    </div>
+
+    <div id="errorMessage" class="message error">
+        יש עוד טעויות... 
+        <br>
+        נסו שוב! 💪
+    </div>
+
+    <script>
+        // Define all possible items grouped by state
+        const allItems = {
+            solid: [
+                'קרח',
+                'שולחן',
+                'כיסא',
+                'עיפרון',
+                'ברזל',
+                'זכוכית',
+                'יהלום',
+                'עץ',
+                'פלסטיק',
+                'נחושת',
+                'זהב',
+                'כסף',
+                'שיש',
+                'גרניט',
+                'קרטון'
+            ],
+            liquid: [
+                'מים',
+                'חלב',
+                'מיץ',
+                'שמן',
+                'דבש',
+                'קפה',
+                'תה',
+                'מרק',
+                'שוקו',
+                'בנזין',
+                'סירופ',
+                'יין',
+                'חומץ',
+                'מי סודה',
+                'שמפו'
+            ],
+            gas: [
+                'אוויר',
+                'חמצן',
+                'אדי מים',
+                'הליום',
+                'חנקן',
+                'פחמן דו חמצני',
+                'מימן',
+                'קיטור',
+                'עשן',
+                'גז בישול',
+                'ארגון',
+                'אוזון',
+                'אדי אלכוהול',
+                'אדי בנזין',
+                'גז טבעי'
+            ]
+        };
+
+        let score = 0;
+        let currentItems = [];
+
+        function getRandomItems() {
+            // Get 3 random items from each state
+            const items = [];
+            ['solid', 'liquid', 'gas'].forEach(state => {
+                const stateItems = allItems[state]
+                    .sort(() => Math.random() - 0.5)
+                    .slice(0, 3)
+                    .map(name => ({ name, state }));
+                items.push(...stateItems);
+            });
+            return items.sort(() => Math.random() - 0.5);
+        }
+
+        function createFirework(x, y) {
+            const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff'];
+            const firework = document.createElement('div');
+            firework.className = 'firework';
+            firework.style.left = x + 'px';
+            firework.style.top = y + 'px';
+            firework.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            document.body.appendChild(firework);
+            
+            setTimeout(() => {
+                firework.remove();
+            }, 1000);
+        }
+
+        function showMessage(type) {
+            const errorMsg = document.getElementById('errorMessage');
+            const successMsg = document.getElementById('successMessage');
+            
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+            
+            if (type === 'success') {
+                successMsg.style.display = 'block';
+                
+                // Create multiple fireworks
+                for (let i = 0; i < 15; i++) {
+                    setTimeout(() => {
+                        const x = Math.random() * window.innerWidth;
+                        const y = Math.random() * window.innerHeight;
+                        createFirework(x, y);
+                    }, i * 200);
+                }
+                
+                setTimeout(() => {
+                    successMsg.style.display = 'none';
+                }, 3000);
+            } else {
+                errorMsg.style.display = 'block';
+                
+                setTimeout(() => {
+                    errorMsg.style.display = 'none';
+                }, 2000);
+            }
+        }
+
+        function initializeGame() {
+            // Clear any existing fireworks
+            document.querySelectorAll('.firework').forEach(fw => fw.remove());
+            
+            // Hide messages
+            document.getElementById('successMessage').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            
+            // Get new random items
+            currentItems = getRandomItems();
+            
+            // Create draggable items
+            const itemsContainer = document.getElementById('items');
+            itemsContainer.innerHTML = '';
+            currentItems.forEach((item, index) => {
+                const element = document.createElement('div');
+                element.className = 'item';
+                element.draggable = true;
+                element.id = `item-${index}`;
+                element.innerText = item.name;
+                element.ondragstart = drag;
+                itemsContainer.appendChild(element);
+            });
+
+            // Reset states
+            ['solid', 'liquid', 'gas'].forEach(state => {
+                const container = document.getElementById(state);
+                container.innerHTML = `<h2>${getStateHebrewName(state)}</h2>`;
+            });
+
+            // Reset score
+            score = 0;
+            updateScore();
+        }
+
+        function getStateHebrewName(state) {
+            const names = {
+                solid: 'מוצק',
+                liquid: 'נוזל',
+                gas: 'גז'
+            };
+            return names[state];
+        }
+
+        function allowDrop(ev) {
+            ev.preventDefault();
+        }
+
+        function drag(ev) {
+            ev.dataTransfer.setData("text", ev.target.id);
+        }
+
+        function drop(ev) {
+            ev.preventDefault();
+            const data = ev.dataTransfer.getData("text");
+            const draggedElement = document.getElementById(data);
+            
+            let dropTarget = ev.target;
+            
+            // If dropped on h2, get parent div
+            if (ev.target.tagName === 'H2') {
+                dropTarget = ev.target.parentElement;
+            }
+            
+            // Only allow drop if element exists and target is a state container
+            if (draggedElement && dropTarget.classList.contains('state')) {
+                dropTarget.appendChild(draggedElement);
+            }
+        }
+
+        function checkAnswers() {
+            let correct = 0;
+            let allPlaced = true;
+            
+            currentItems.forEach((item, index) => {
+                const element = document.getElementById(`item-${index}`);
+                if (element.parentElement && element.parentElement.classList.contains('state')) {
+                    const parentState = element.parentElement.id;
+                    if (parentState === item.state) {
+                        element.classList.add('correct');
+                        element.classList.remove('incorrect');
+                        correct++;
+                    } else {
+                        element.classList.add('incorrect');
+                        element.classList.remove('correct');
+                    }
+                } else {
+                    allPlaced = false;
+                }
+            });
+            
+            score = Math.round((correct / currentItems.length) * 100);
+            updateScore();
+            
+            if (!allPlaced) {
+                showMessage('error');
+            } else if (score === 100) {
+                showMessage('success');
+            } else {
+                showMessage('error');
+            }
+        }
+
+        function updateScore() {
+            document.getElementById('score').innerText = score;
+        }
+
+        function resetGame() {
+            // Remove all feedback classes
+            document.querySelectorAll('.item').forEach(item => {
+                item.classList.remove('correct', 'incorrect');
+            });
+            initializeGame();
+        }
+
+        // Initialize game when the page loads
+        window.onload = initializeGame;
+    </script>
+</body>
+</html>

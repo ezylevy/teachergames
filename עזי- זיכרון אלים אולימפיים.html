@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>משחק זיכרון - תשתיות ושירות ציבורי</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            direction: rtl;
+            margin: 20px;
+        }
+        .game-container {
+            display: grid;
+            grid-template-columns: repeat(5, 100px);
+            gap: 10px;
+            justify-content: center;
+            margin: 20px auto;
+        }
+        .card {
+            width: 100px;
+            height: 100px;
+            background-color: orange;
+            border: 2px solid blue;
+            font-size: 16px;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .card.flipped {
+            background-color: white;
+            color: black;
+            cursor: default;
+        }
+        .hidden {
+            visibility: hidden;
+        }
+        .score-board {
+            margin: 20px;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <h1>משחק זיכרון - תשתיות ושירות ציבורי</h1>
+    <div>
+        <label>שם שחקן 1: <input type="text" id="player1" placeholder="הכנס שם"></label>
+        <label>שם שחקן 2: <input type="text" id="player2" placeholder="הכנס שם"></label>
+        <button onclick="startGame()">התחל משחק</button>
+    </div>
+    <div class="score-board">
+        <span id="score"></span>
+    </div>
+    <h2 id="turn"></h2>
+    <div class="game-container" id="gameBoard"></div>
+    <script>
+        const pairs = [
+            ["כביש", "רמזור"],
+            ["חשמל", "תחנת כוח"],
+            ["מים", "ברז"],
+            ["תחנת אוטובוס", "אוטובוס"],
+            ["רכבת", "תחנת רכבת"],
+            ["ספרייה", "ספרים"],
+            ["בית חולים", "אמבולנס"],
+            ["בית ספר", "תלמידים"],
+            ["משטרה", "ניידת משטרה"],
+            ["גשר", "עמודי תמיכה"]
+        ];
+
+        let cards = [];
+        let flippedCards = [];
+        let currentPlayer = 0;
+        let scores = [0, 0];
+        let players = ["שחקן 1", "שחקן 2"];
+        let lockBoard = false;
+
+        function startGame() {
+            const player1 = document.getElementById("player1").value || "שחקן 1";
+            const player2 = document.getElementById("player2").value || "שחקן 2";
+            players = [player1, player2];
+            scores = [0, 0];
+            currentPlayer = 0;
+            flippedCards = [];
+            lockBoard = false;
+            updateTurnDisplay();
+            updateScoreDisplay();
+            createBoard();
+        }
+
+        function updateTurnDisplay() {
+            document.getElementById("turn").textContent = `התור של ${players[currentPlayer]}`;
+        }
+
+        function updateScoreDisplay() {
+            document.getElementById("score").textContent = 
+                `${players[0]}: ${scores[0]} זוגות | ${players[1]}: ${scores[1]} זוגות`;
+        }
+
+        function createBoard() {
+            cards = [];
+            pairs.forEach(([word1, word2]) => {
+                cards.push({ text: word1, matched: false });
+                cards.push({ text: word2, matched: false });
+            });
+            cards = cards.sort(() => Math.random() - 0.5);
+            const gameBoard = document.getElementById("gameBoard");
+            gameBoard.innerHTML = "";
+            cards.forEach((card, index) => {
+                const cardElement = document.createElement("div");
+                cardElement.classList.add("card");
+                cardElement.dataset.index = index;
+                cardElement.textContent = "";
+                cardElement.onclick = () => flipCard(index);
+                gameBoard.appendChild(cardElement);
+            });
+        }
+
+        function flipCard(index) {
+            if (lockBoard || cards[index].matched || flippedCards.includes(index)) return;
+            flippedCards.push(index);
+            updateBoard();
+            if (flippedCards.length === 2) {
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            lockBoard = true;
+            const [index1, index2] = flippedCards;
+            const match = pairs.some(([word1, word2]) =>
+                (cards[index1].text === word1 && cards[index2].text === word2) ||
+                (cards[index1].text === word2 && cards[index2].text === word1)
+            );
+
+            if (match) {
+                cards[index1].matched = true;
+                cards[index2].matched = true;
+                scores[currentPlayer]++;
+                updateScoreDisplay();
+            } else {
+                currentPlayer = 1 - currentPlayer;
+                updateTurnDisplay();
+            }
+
+            setTimeout(() => {
+                flippedCards = [];
+                lockBoard = false;
+                updateBoard();
+                checkWin();
+            }, 1000);
+        }
+
+        function updateBoard() {
+            const gameBoard = document.getElementById("gameBoard");
+            gameBoard.childNodes.forEach((cardElement, index) => {
+                const card = cards[index];
+                cardElement.textContent = flippedCards.includes(index) || card.matched ? card.text : "";
+                cardElement.classList.toggle("flipped", flippedCards.includes(index) || card.matched);
+                cardElement.classList.toggle("hidden", card.matched);
+            });
+        }
+
+        function checkWin() {
+            if (cards.every(card => card.matched)) {
+                const winner = scores[0] === scores[1] 
+                    ? "התוצאה תיקו!"
+                    : `המנצח הוא ${players[scores[0] > scores[1] ? 0 : 1]} עם ${Math.max(...scores)} זוגות!`;
+                setTimeout(() => {
+                    alert(winner);
+                    startGame();
+                }, 300);
+            }
+        }
+
+        // Start the game when the page loads
+        window.onload = startGame;
+    </script>
+</body>
+</html>

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <title>משחק מיון חלקי דיבר</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f8ff;
+            margin: 0;
+            padding: 20px;
+        }
+        .game-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .categories-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .category {
+            min-height: 200px;
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            padding: 10px;
+            background-color: #ebf5fb;
+        }
+        .word {
+            background-color: #fff;
+            border: 1px solid #bdc3c7;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 5px;
+            cursor: move;
+            display: inline-block;
+            transition: all 0.3s ease;
+            font-size: 20px;
+        }
+        .word:hover { transform: scale(1.05); }
+        .words-container {
+            margin: 20px 0;
+            padding: 10px;
+            border: 2px dashed #bdc3c7;
+            border-radius: 10px;
+            min-height: 50px;
+        }
+        .score {
+            font-size: 1.2em;
+            margin: 20px 0;
+            color: #2c3e50;
+        }
+        .correct { background-color: #d4edda; }
+        .incorrect { background-color: #f8d7da; }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+            margin: 10px;
+        }
+        .message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            display: none;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>משחק מיון חלקי דיבר</h1>
+        <div class="score">ניקוד: <span id="score">0</span></div>
+        
+        <div class="categories-container">
+            <div class="category" id="noun" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <h2>שם עצם</h2>
+            </div>
+            <div class="category" id="verb" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <h2>פועל</h2>
+            </div>
+            <div class="category" id="adjective" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <h2>שם תואר</h2>
+            </div>
+            <div class="category" id="infinitive" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <h2>שם הפועל</h2>
+            </div>
+        </div>
+
+        <div class="words-container" id="words"></div>
+
+        <button onclick="checkAnswers()">בדוק תשובות</button>
+        <button onclick="resetGame()">משחק חדש</button>
+    </div>
+
+    <div id="successMessage" class="message">כל הכבוד! 🎉</div>
+    <div id="errorMessage" class="message">נסו שוב! 💪</div>
+
+    <script>
+        let score = 0;
+        let currentWords = [];
+
+        const words = [
+            // שמות עצם
+            { text: 'סֵפֶר', type: 'noun' },
+            { text: 'שֻׁלְחָן', type: 'noun' },
+            { text: 'מִשְׂחָק', type: 'noun' },
+            { text: 'בַּיִת', type: 'noun' },
+            { text: 'כַּדּוּר', type: 'noun' },
+            
+            // פעלים
+            { text: 'רָץ', type: 'verb' },
+            { text: 'מְשַׂחֵק', type: 'verb' },
+            { text: 'קוֹרֵא', type: 'verb' },
+            { text: 'כּוֹתֵב', type: 'verb' },
+            { text: 'אוֹכֵל', type: 'verb' },
+            
+            // שמות תואר
+            { text: 'גָּדוֹל', type: 'adjective' },
+            { text: 'קָטָן', type: 'adjective' },
+            { text: 'חָכָם', type: 'adjective' },
+            { text: 'יָפֶה', type: 'adjective' },
+            { text: 'מְעַנְיֵן', type: 'adjective' },
+            
+            // שמות פועל
+            { text: 'לָרוּץ', type: 'infinitive' },
+            { text: 'לְשַׂחֵק', type: 'infinitive' },
+            { text: 'לִקְרוֹא', type: 'infinitive' },
+            { text: 'לִכְתּוֹב', type: 'infinitive' },
+            { text: 'לֶאֱכוֹל', type: 'infinitive' }
+        ];
+
+        function initializeGame() {
+            const categories = ['noun', 'verb', 'adjective', 'infinitive'];
+            currentWords = [];
+            
+            categories.forEach(category => {
+                const categoryWords = words.filter(word => word.type === category);
+                const selectedWords = categoryWords
+                    .sort(() => Math.random() - 0.5)
+                    .slice(0, 3);
+                currentWords.push(...selectedWords);
+            });
+            
+            currentWords = currentWords.sort(() => Math.random() - 0.5);
+            
+            const wordsContainer = document.getElementById('words');
+            wordsContainer.innerHTML = '';
+            currentWords.forEach((word, index) => {
+                const element = document.createElement('div');
+                element.className = 'word';
+                element.draggable = true;
+                element.id = `word-${index}`;
+                element.innerText = word.text;
+                element.ondragstart = drag;
+                wordsContainer.appendChild(element);
+            });
+
+            categories.forEach(category => {
+                const container = document.getElementById(category);
+                container.innerHTML = `<h2>${getCategoryHebrewName(category)}</h2>`;
+            });
+
+            score = 0;
+            updateScore();
+        }
+
+        function getCategoryHebrewName(category) {
+            return {
+                noun: 'שם עצם',
+                verb: 'פועל',
+                adjective: 'שם תואר',
+                infinitive: 'שם הפועל'
+            }[category];
+        }
+
+        function allowDrop(ev) { ev.preventDefault(); }
+        function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); }
+
+        function drop(ev) {
+            ev.preventDefault();
+            const data = ev.dataTransfer.getData("text");
+            const draggedElement = document.getElementById(data);
+            let dropTarget = ev.target.tagName === 'H2' ? ev.target.parentElement : ev.target;
+            
+            if (draggedElement && dropTarget.classList.contains('category')) {
+                dropTarget.appendChild(draggedElement);
+            }
+        }
+
+        function showMessage(type) {
+            const msg = document.getElementById(type === 'success' ? 'successMessage' : 'errorMessage');
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display = 'none', 2000);
+        }
+
+        function checkAnswers() {
+            let correct = 0;
+            let allPlaced = true;
+            
+            currentWords.forEach((word, index) => {
+                const element = document.getElementById(`word-${index}`);
+                if (element.parentElement?.classList.contains('category')) {
+                    if (element.parentElement.id === word.type) {
+                        element.classList.add('correct');
+                        element.classList.remove('incorrect');
+                        correct++;
+                    } else {
+                        element.classList.add('incorrect');
+                        element.classList.remove('correct');
+                    }
+                } else {
+                    allPlaced = false;
+                }
+            });
+            
+            score = Math.round((correct / currentWords.length) * 100);
+            updateScore();
+            
+            if (!allPlaced) {
+                showMessage('error');
+            } else if (score === 100) {
+                showMessage('success');
+            } else {
+                showMessage('error');
+            }
+        }
+
+        function updateScore() {
+            document.getElementById('score').innerText = score;
+        }
+
+        function resetGame() {
+            document.querySelectorAll('.word').forEach(word => {
+                word.classList.remove('correct', 'incorrect');
+            });
+            initializeGame();
+        }
+
+        window.onload = initializeGame;
+    </script>
+</body>
+</html>

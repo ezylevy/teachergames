@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>A or An - English Articles Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f8ff;
+            margin: 0;
+            padding: 20px;
+        }
+        .game-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .rules {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: right;
+        }
+        .question {
+            font-size: 1.3em;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f7f9fc;
+            border-radius: 8px;
+            line-height: 1.6;
+        }
+        .options-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 15px 0;
+        }
+        .option {
+            background-color: #e3f2fd;
+            border: 2px solid #2196f3;
+            border-radius: 5px;
+            padding: 10px 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.2em;
+            min-width: 60px;
+        }
+        .option:hover {
+            background-color: #bbdefb;
+            transform: translateY(-2px);
+        }
+        .option.selected {
+            background-color: #2196f3;
+            color: white;
+        }
+        .option.correct {
+            background-color: #a5d6a7;
+            border-color: #4caf50;
+            color: black;
+        }
+        .option.incorrect {
+            background-color: #ef9a9a;
+            border-color: #f44336;
+            color: black;
+        }
+        .score {
+            font-size: 1.2em;
+            margin: 20px 0;
+            color: #2c3e50;
+        }
+        .progress {
+            margin: 20px 0;
+            font-size: 1.1em;
+            color: #666;
+        }
+        button {
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+            margin: 10px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #1976d2;
+        }
+        button:disabled {
+            background-color: #bdbdbd;
+            cursor: not-allowed;
+        }
+        .explanation {
+            display: none;
+            background-color: #e8f5e9;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            text-align: right;
+        }
+        .final-score {
+            font-size: 1.5em;
+            color: #2c3e50;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>A or An - English Articles Game</h1>
+        
+        <div class="rules">
+            <h3>:כללי השימוש</h3>
+            <p>משתמשים ב-an לפני מילים שמתחילות בצליל של תנועה (a, e, i, o, u)</p>
+            <p>משתמשים ב-a לפני מילים שמתחילות בצליל של עיצור</p>
+            <p>!שימו לב: הכלל מתייחס לצליל ולא לאות הראשונה</p>
+        </div>
+
+        <div class="score">Score: <span id="score">0</span></div>
+        <div class="progress">Question <span id="currentQuestion">1</span> of <span id="totalQuestions">15</span></div>
+        
+        <div id="questionContainer" class="question"></div>
+        <div class="options-container">
+            <div class="option" onclick="selectOption(this, 'a')">a</div>
+            <div class="option" onclick="selectOption(this, 'an')">an</div>
+        </div>
+        
+        <div id="explanation" class="explanation"></div>
+        
+        <button onclick="checkAnswer()" id="checkButton">Check Answer</button>
+        <button onclick="nextQuestion()" id="nextButton" style="display: none;">Next Question</button>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                sentence: "I see ___ elephant.",
+                correct: "an",
+                explanation: "משתמשים ב-an כי elephant מתחילה בצליל של תנועה (e)"
+            },
+            {
+                sentence: "She has ___ umbrella.",
+                correct: "an",
+                explanation: "משתמשים ב-an כי umbrella מתחילה בצליל של תנועה (u)"
+            },
+            {
+                sentence: "He is ___ honest person.",
+                correct: "an",
+                explanation: "למרות שהמילה מתחילה ב-h, ה-h אינו נשמע, לכן משתמשים ב-an"
+            },
+            {
+                sentence: "I want ___ banana.",
+                correct: "a",
+                explanation: "משתמשים ב-a כי banana מתחילה בצליל של עיצור (b)"
+            },
+            {
+                sentence: "She is ___ university student.",
+                correct: "a",
+                explanation: "למרות שהמילה מתחילה ב-u, הצליל הוא של yu (עיצור), לכן משתמשים ב-a"
+            },
+            {
+                sentence: "I need ___ apple.",
+                correct: "an",
+                explanation: "משתמשים ב-an כי apple מתחילה בצליל של תנועה (a)"
+            },
+            {
+                sentence: "He bought ___ car.",
+                correct: "a",
+                explanation: "משתמשים ב-a כי car מתחילה בצליל של עיצור (c)"
+            },
+            {
+                sentence: "I saw ___ owl.",
+                correct: "an",
+                explanation: "משתמשים ב-an כי owl מתחילה בצליל של תנועה (o)"
+            },
+            {
+                sentence: "She is ___ excellent teacher.",
+                correct: "an",
+                explanation: "משתמשים ב-an כי excellent מתחילה בצליל של תנועה (e)"
+            },
+            {
+                sentence: "He has ___ house.",
+                correct: "a",
+                explanation: "משתמשים ב-a כי house מתחילה בצליל של עיצור (h)"
+            },
+            {
+                sentence: "I ate ___ ice cream.",
+                correct: "an",
+                explanation: "משתמשים ב-an כי ice מתחילה בצליל של תנועה (i)"
+            },
+            {
+                sentence: "She bought ___ new book.",
+                correct: "a",
+                explanation: "משתמשים ב-a כי new מתחילה בצליל של עיצור (n)"
+            },
+            {
+                sentence: "He is ___ European.",
+                correct: "a",
+                explanation: "למרות שהמילה מתחילה ב-e, הצליל הוא של yu (עיצור), לכן משתמשים ב-a"
+            },
+            {
+                sentence: "I need ___ hour.",
+                correct: "an",
+                explanation: "למרות שהמילה מתחילה ב-h, ה-h אינו נשמע, לכן משתמשים ב-an"
+            },
+            {
+                sentence: "She wants ___ orange.",
+                correct: "an",
+                explanation: "משתמשים ב-an כי orange מתחילה בצליל של תנועה (o)"
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let selectedOption = null;
+
+        function showQuestion() {
+            const question = questions[currentQuestionIndex];
+            document.getElementById('questionContainer').textContent = question.sentence;
+            document.getElementById('currentQuestion').textContent = currentQuestionIndex + 1;
+            document.getElementById('totalQuestions').textContent = questions.length;
+            document.getElementById('explanation').style.display = 'none';
+            document.getElementById('checkButton').style.display = 'inline-block';
+            document.getElementById('nextButton').style.display = 'none';
+            
+            // Reset options
+            document.querySelectorAll('.option').forEach(option => {
+                option.classList.remove('selected', 'correct', 'incorrect');
+            });
+            
+            selectedOption = null;
+        }
+
+        function selectOption(element, option) {
+            document.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+            selectedOption = option;
+        }
+
+        function checkAnswer() {
+            if (!selectedOption) return;
+
+            const question = questions[currentQuestionIndex];
+            const correct = selectedOption === question.correct;
+            
+            document.querySelectorAll('.option').forEach(option => {
+                if (option.textContent === selectedOption) {
+                    option.classList.add(correct ? 'correct' : 'incorrect');
+                }
+                if (option.textContent === question.correct) {
+                    option.classList.add('correct');
+                }
+            });
+
+            if (correct) {
+                score += 10;
+                document.getElementById('score').textContent = score;
+            }
+
+            document.getElementById('explanation').textContent = question.explanation;
+            document.getElementById('explanation').style.display = 'block';
+            document.getElementById('checkButton').style.display = 'none';
+            document.getElementById('nextButton').style.display = 'inline-block';
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                showQuestion();
+            } else {
+                endGame();
+            }
+        }
+
+        function endGame() {
+            document.getElementById('questionContainer').innerHTML = `
+                <div class="final-score">
+                    <h2>Game Completed!</h2>
+                    <p>Your final score: ${score} out of ${questions.length * 10}</p>
+                </div>
+            `;
+            document.querySelectorAll('.option').forEach(opt => opt.style.display = 'none');
+            document.getElementById('checkButton').style.display = 'none';
+            document.getElementById('nextButton').style.display = 'none';
+            document.getElementById('explanation').style.display = 'none';
+        }
+
+        window.onload = showQuestion;
+    </script>
+</body>
+</html>
